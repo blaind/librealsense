@@ -16,6 +16,7 @@
 #include <map>
 #include <limits>
 #include <iostream>
+#include <inttypes.h>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "third_party/stb_image_write.h"
@@ -76,12 +77,19 @@ int main() try
 
     std::vector<stream_record> supported_streams;
 
-    for (int i=(int)rs::capabilities::depth; i <=(int)rs::capabilities::fish_eye; i++)
-        if (dev->supports((rs::capabilities)i))
-            supported_streams.push_back(stream_record((rs::stream)i));
+    //for (int i=(int)rs::capabilities::depth; i <=(int)rs::capabilities::fish_eye; i++)
+    //    if (dev->supports((rs::capabilities)i))
+    //        supported_streams.push_back(stream_record((rs::stream)i));
+    supported_streams.push_back(stream_record((rs::stream) 0));
+    supported_streams.push_back(stream_record((rs::stream) 1));
 
-    for (auto & stream_record : supported_streams)
-        dev->enable_stream(stream_record.stream, rs::preset::best_quality);
+    //for (auto & stream_record : supported_streams)
+    //    dev->enable_stream(stream_record.stream, rs::preset::best_quality);
+
+    int video_w = 1920; int video_h = 1080;
+    int depth_w = 640; int depth_h = 480;
+    dev->enable_stream(supported_streams[0].stream, depth_w, depth_h, rs::format::z16, 30);
+    dev->enable_stream(supported_streams[1].stream, video_w, video_h, rs::format::rgb8, 30);
 
     /* activate video streaming */
     dev->start();
@@ -94,8 +102,9 @@ int main() try
     for (int i = 0; i < 30; ++i) dev->wait_for_frames();
 
     /* Retrieve data from all the enabled streams */
-    for (auto & stream_record : supported_streams)
-        stream_record.frame_data = const_cast<uint8_t *>((const uint8_t*)dev->get_frame_data(stream_record.stream));
+    //for (auto & stream_record : supported_streams)
+    supported_streams[0].frame_data = const_cast<uint8_t *>((const uint8_t*)dev->get_frame_data(rs::stream::depth_aligned_to_rectified_color));
+    supported_streams[1].frame_data = const_cast<uint8_t *>((const uint8_t*)dev->get_frame_data(rs::stream::rectified_color));
 
     /* Transform Depth range map into color map */
     stream_record depth = supported_streams[(int)rs::stream::depth];
